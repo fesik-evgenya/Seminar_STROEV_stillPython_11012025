@@ -5,7 +5,10 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+import time
 
+
+# time.sleep(10) - прерывает каждый запрос на 10 секунд
 # ссылка на ресурс, откуда собираем данные
 number_page = 1
 url_page = f'https://www.detmir.ru/catalog/index/name/nutrition_feeding/?page={number_page}'
@@ -60,5 +63,108 @@ item_price = re.findall(r'\d+', soup_item_page.select_one('p[data-testid]').get_
 # о товаре
 item_about = soup_item_page.select_one('section[data-testid="descriptionBlock"]').get_text(strip=True)
 
+# сбор данных по API (Работа России)
+# подключение библиотек
+# import  requests
 
+# задание запроса
+region_code = '57'
+offset = 0
 
+#1
+# url_api = f'http://opendata.trudvsem.ru/api/v1/vacancies/region/{region_code}?offset={offset}&limit=100'
+
+#2
+url_api = 'http://opendata.trudvsem.ru/api/v1/vacancies'
+params = {
+    'region_code': '57',
+    'offset': 0
+}
+
+# отправка запроса
+#1
+# answer = requests.get(url_api)
+
+#2
+answer = requests.get(url_api, params=params)
+
+# анализ ответа сервера
+# код завершения операции
+print(answer.status_code)
+
+# содержимое ответа
+print(answer.text)
+
+# ответ сервера получен в формате JSON в виде строки
+# для удобства работы необходимо преобразовать строку в словарь
+# 1) у объекта response есть метод .json()
+# 2) в пакете json есть метод loads() для загрузки содержимого словаря из строки
+# 3) Pandas -> .explode() & .json_normalize()
+
+# преобразование str в dict
+import  json
+
+#1
+# ans_json = answer.json()
+
+#2
+ans_json = json.loads(answer.text) # встроенный метод
+
+# разбор полученного словаря
+# .keys(), .values(), .items()
+# так как это ans_json словарь, необходимо исследовать по ключам
+
+# просмотр всех ключей
+ans_json.keys()
+
+# ключ 'status'
+ans_json.get('status', 'ERROR')
+
+# ключ 'request'
+ans_json.get('request', 'ERROR')
+
+# ключ 'meta'
+ans_json.get('meta', 'ERROR')
+
+# ключ 'meta'
+ans_json.get('meta', 'ERROR')
+
+# ключ 'results'
+ans_json.get('results', 'ERROR')
+
+# видим, что здесь находятся все найденные результатыб
+# определим тип этой структуры
+print(type(ans_json.get('results'))) # это словарь
+# просмотр ключей словаря
+ans_json.get('results').keys()
+# ключ 'vacancies'
+ans_json.get('results').get('vacancies')
+
+# видим, что это полученная структура список - возможно, вакансии
+lst_vacancies = ans_json.get('results').get('vacancies')
+
+# разбор отдельной вакансии
+print(lst_vacancies[0])
+
+# проверка типа
+print(type(lst_vacancies[0]))
+
+# просмотр ключей
+print(lst_vacancies[0].keys())
+
+# собираемые поля
+## 'region_name', 'name', 'inn', 'creation_date', 'salary_min', 'job_name',
+## 'duty'
+lst_keys = ['region_name', 'name', 'inn', 'creation_date',
+            'salary_min', 'job_name', 'duty' ]
+dct_vac = dict.fromkeys(lst_keys, None)
+
+for vac in dct_vac:
+    dct_vac['region_name'] = vac['vacancy']['region']['name']
+    dct_vac['company_name'] = vac.get('vacancy').get('region').get('company_name')
+    dct_vac['inn'] = vac.get('vacancy').get('region').get('inn')
+    dct_vac['salary_min'] = vac.get('vacancy').get('region').get('creation_date')
+    dct_vac['creation_date'] = vac.get('vacancy').get('region').get('salary_min')
+
+# о товаре
+item_about = soup_item_page.select_one('section[data-testid="descriptionBlock"]').get_text(strip=True)
